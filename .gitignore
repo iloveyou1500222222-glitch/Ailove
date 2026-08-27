@@ -1,3 +1,5 @@
-node_modules
+.dart_tool/
+.packages
+build/
+.pub/
 .env
-.DS_Store
