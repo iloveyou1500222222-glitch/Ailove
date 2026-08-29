@@ -1,17 +1,12 @@
 {
-  "name": "ai-chat-app-backend",
+  "name": "tear-heartligend-mm",
   "version": "1.0.0",
-  "description": "Backend for AI Chat and BotFather system",
-  "main": "server.js",
+  "description": "MLBB Style 3D Web Game",
+  "main": "index.html",
   "scripts": {
-    "start": "node server.js"
+    "start": "npx serve ."
   },
   "dependencies": {
-    "@google/generative-ai": "^0.21.0",
-    "bcryptjs": "^2.4.3",
-    "express": "^4.19.2"
-  },
-  "engines": {
-    "node": ">=18.0.0"
+    "serve": "^14.2.1"
   }
 }
