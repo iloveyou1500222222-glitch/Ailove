@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Tear Heartligend : MM (3D Edition)</title>
+    <style>
+        body { margin: 0; background: #030712; overflow: hidden; font-family: sans-serif; color: white; text-align: center; }
+        #webgl-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; z-index: 1; }
+        .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(circle, #1e1b4b, #030712); z-index: 10; }
+        .btn { padding: 12px 35px; font-size: 18px; font-weight: bold; background: linear-gradient(45deg, #f43f5e, #fb7185); color: white; border: none; border-radius: 25px; box-shadow: 0 0 20px rgba(244,63,94,0.7); cursor: pointer; margin-top: 10px; }
+        .btn-shop { background: linear-gradient(45deg, #eab308, #facc15); color: #000; }
+        .panel { background: rgba(255,255,255,0.07); padding: 15px; border-radius: 15px; margin: 10px; border: 1px solid #38bdf8; width: 80%; max-width: 300px; }
+        #gameUI { position: absolute; bottom: 15px; right: 15px; display: none; z-index: 5; pointer-events: auto; }
+        .skill-btn { width: 55px; height: 55px; margin: 4px; border-radius: 50%; background: #f43f5e; color: white; font-weight: bold; border: 2px solid white; font-size: 12px; cursor: pointer; display: inline-block; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+        #ultimate { background: #eab308; color: #000; }
+        #topHUD { position: absolute; top: 10px; left: 10px; right: 10px; display: none; justify-content: space-between; font-size: 13px; font-weight: bold; z-index: 5; pointer-events: none; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+    </style>
+    <!-- Three.js Library for 3D Graphics -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+    <!-- Lobby Screen -->
+    <div id="lobbyScreen" class="screen">
+        <h1 style="color: #f43f5e; text-shadow: 0 0 20px #f43f5e; margin-bottom: 5px;">TEAR HEARTLIGEND : MM</h1>
+        <p style="color: #94a3b8; margin-bottom: 10px;">💎 Diamonds: <span id="diamondCount" style="color:#facc15; font-weight:bold;">500</span></p>
+        
+        <div class="panel">
+            <p style="margin: 5px; color: #38bdf8; font-weight: bold;">Hero: Aiden (3D Model)</p>
+            <p id="skinStatus" style="margin: 5px; font-size: 13px; color: #cbd5e1;">Skin: Default Look</p>
+            <button class="btn btn-shop" style="font-size: 14px; padding: 8px 20px;" onclick="buySkin()">စကင်ဝယ်မည် (200 💎)</button>
+        </div>
+
+        <button class="btn" onclick="topUpDiamonds()">💎 စိန်ဖြည့်မည် (+300)</button>
+        <button class="btn" style="background: linear-gradient(45deg, #0ea5e9, #38bdf8);" onclick="startGame()">3D BATTLE သို့ ဝင်မည်</button>
+    </div>
+
+    <!-- Top HUD -->
+    <div id="topHUD">
+        <div>🔴 KDA: <span id="kda">0/0/0</span></div>
+        <div>🪙 Gold: <span id="gold">300</span></div>
+        <div>💎 <span id="hudDiamonds">500</span></div>
+    </div>
+
+    <!-- In-Game Skills -->
+    <div id="gameUI">
+        <div>
+            <button class="skill-btn" onclick="useSkill('S1')">S1</button>
+            <button class="skill-btn" onclick="useSkill('S2')">S2</button>
+        </div>
+        <div>
+            <button class="skill-btn" id="ultimate" onclick="useSkill('ULT')">ULT</button>
+            <button class="skill-btn" style="background:#0ea5e9;" onclick="useSkill('RETRI')">RET</button>
+        </div>
+    </div>
+
+    <!-- 3D Container -->
+    <div id="webgl-container"></div>
+
+    <script>
+        let scene, camera, renderer, heroMesh;
+        let diamonds = 500;
+        let goldCount = 300;
+        let kills = 0;
+        let hasSkin = false;
+        let gameActive = false;
+        let moveLeft = false, moveRight = false;
+
+        function topUpDiamonds() {
+            diamonds += 300;
+            document.getElementById("diamondCount").innerText = diamonds;
+            alert("🎉 စိန် ၃၀၀ အောင်မြင်စွာ ဖြည့်ပြီးပါပြီ!");
+        }
+
+        function buySkin() {
+            if(hasSkin) {
+                alert("✨ ဒီစကင်ကို ပိုင်ဆိုင်ပြီးသား ဖြစ်ပါတယ်။");
+                return;
+            }
+            if(diamonds >= 200) {
+                diamonds -= 200;
+                hasSkin = true;
+                document.getElementById("diamondCount").innerText = diamonds;
+                document.getElementById("skinStatus").innerText = "Skin: 🔥 Hellfire Phoenix (Owned)";
+                if(heroMesh) {
+                    heroMesh.material.color.setHex(0xf43f5e); // Change 3D hero color for skin
+                }
+                alert("🔥 Hellfire Phoenix Skin ကို အောင်မြင်စွာ ဝယ်ယူလိုက်ပါပြီ!");
+            } else {
+                alert("❌ စိန်မလုံလောက်ပါ။ စိန်ထပ်ဖြည့်ပါ။");
+            }
+        }
+
+        function startGame() {
+            document.getElementById("lobbyScreen").style.display = "none";
+            document.getElementById("topHUD").style.display = "flex";
+            document.getElementById("gameUI").style.display = "block";
+            document.getElementById("webgl-container").style.display = "block";
+            
+            init3D();
+            gameActive = true;
+            animate();
+        }
+
+        function init3D() {
+            const container = document.getElementById("webgl-container");
+            
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0f172a);
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 10, 12);
+            camera.lookAt(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+            const pointLight = new THREE.PointLight(0xffffff, 1);
+            pointLight.position.set(0, 15, 5);
+            scene.add(pointLight);
+
+            // 3D Map (Ground / Mid Lane)
+            const groundGeo = new THREE.PlaneGeometry(10, 40);
+            const groundMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            scene.add(ground);
+
+            // 3D Hero Mesh
+            const heroGeo = new THREE.BoxGeometry(1.2, 1.2, 1.2);
+            const heroMat = new THREE.MeshStandardMaterial({ color: hasSkin ? 0xf43f5e : 0x38bdf8 });
+            heroMesh = new THREE.Mesh(heroGeo, heroMat);
+            heroMesh.position.set(0, 0.6, 6);
+            scene.add(heroMesh);
+
+            // 3D Enemy Tower Mesh
+            const towerGeo = new THREE.CylinderGeometry(1, 1.5, 3, 16);
+            const towerMat = new THREE.MeshStandardMaterial({ color: 0xef4444 });
+            const tower = new THREE.Mesh(towerGeo, towerMat);
+            tower.position.set(0, 1.5, -8);
+            scene.add(tower);
+
+            // Touch / Mouse controls for mobile & pc
+            window.addEventListener('pointermove', (e) => {
+                if(!gameActive) return;
+                let normX = (e.clientX / window.innerWidth) * 2 - 1;
+                heroMesh.position.x = normX * 4;
+            });
+        }
+
+        function useSkill(type) {
+            if(type === 'ULT') {
+                alert("🔥 3D ULTIMATE Activated! ဧရာမ မီးတောင်စွမ်းအင် ဖောက်ခွဲလိုက်သည်!");
+                kills += 1;
+                goldCount += 100;
+            } else if(type === 'RETRI') {
+                alert("⚡ Retribution သုံးပြီး ကျန်ဂလူး ဘီလူးကို သတ်လိုက်သည်!");
+                goldCount += 50;
+            } else {
+                alert(type + " Skill သုံးလိုက်ပြီ!");
+            }
+            document.getElementById("gold").innerText = goldCount;
+            document.getElementById("kda").innerText = kills + "/0/0";
+            document.getElementById("hudDiamonds").innerText = diamonds;
+        }
+
+        function animate() {
+            if(!gameActive) return;
+            requestAnimationFrame(animate);
+
+            // Slight hero floating animation
+            if(heroMesh) {
+                heroMesh.rotation.y += 0.01;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            if(camera && renderer) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+        });
+    </script>
+</body>
+</html>
